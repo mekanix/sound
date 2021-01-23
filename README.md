@@ -13,15 +13,15 @@ so try to match its "-s" parameter with Jack period and the block size of your
 hardware - what is it BTW?
 
 For USB the block size is according to buffer_ms sysctl, e.g. 2ms at 48kHz
-gives me 0.002*48000=96 samples per block, all multiples of this work well as
-Jack period.
+gives me `0.002 * 48000 = 96` samples per block, all multiples of this work
+well as Jack period.
 
 
 # Previous mail
 
 Actually it would be 2 fragments in the example that make up a total buffer
-size of 2*1024. Thus my patch would divide it into 8 fragments of size.
-2*1024/8 = 256 samples instead.
+size of `2 * 1024`. Thus my patch would divide it into 8 fragments of size.
+`2 * 1024 / 8 = 256` samples instead.
 
 The problem lies not in the number of bytes written, but in the timing. Jack
 insists on writing / reading a certain number of samples at a time, one period
