@@ -89,7 +89,7 @@ int main()
   tmp = format;
   error = ioctl(fd, SNDCTL_DSP_SETFMT, &tmp);
   checkError(error, "SNDCTL_DSP_SETFMT");
-  if (tmp != AFMT_S32_NE && tmp != AFMT_S32_OE)
+  if (tmp != format)
   {
     fprintf(stderr, "%s doesn't support chosen sample format!\n", deviceName);
     exit(1);
