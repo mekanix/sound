@@ -21,7 +21,7 @@ Jack period.
 
 Actually it would be 2 fragments in the example that make up a total buffer
 size of 2*1024. Thus my patch would divide it into 8 fragments of size.
-*1024/8 = 256 samples instead.
+2*1024/8 = 256 samples instead.
 
 The problem lies not in the number of bytes written, but in the timing. Jack
 insists on writing / reading a certain number of samples at a time, one period
