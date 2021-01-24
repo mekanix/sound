@@ -3,7 +3,7 @@
 [Official OSS development howto](http://manuals.opensound.com/developer/DSP.html)
 
  * There is a software facing buffer (bs) and a hardware driver buffer (b)
- * The sizes can be seen with `cat /dev/sndstat` as [b:_:_:_] [bs:_:_:_] (sysctl hw.snd.verbose=2)
+ * The sizes can be seen with `cat /dev/sndstat` as `[b:_/_/_] [bs:_/_/_]` (needed: sysctl hw.snd.verbose=2)
  * OSS ioctl only concern software buffer fragments, not hardware
  * Software buffer fragments don't matter, there is no quantization going on
  * Hardware buffer fragments do matter for timing, but are inaccessible...
