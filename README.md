@@ -12,9 +12,9 @@ Not sure how virtual_oss handles them, but I think it is processed blockwise,
 so try to match its "-s" parameter with Jack period and the block size of your
 hardware - what is it BTW?
 
-For USB the block size is according to buffer_ms sysctl, e.g. 2ms at 48kHz
-gives me `0.002 * 48000 = 96` samples per block, all multiples of this work
-well as Jack period.
+For USB the block size is according to `hw.usb.uaudio.buffer_ms` sysctl, meaning 
+2ms at 48kHz gives `0.002 * 48000 = 96` samples per block, all multiples of this 
+work well as Jack period.
 
 
 # Previous mail
@@ -32,7 +32,7 @@ samples. It is bound to do so in a fixed time frame, to avoid under- and
 overruns in communication with the hardware.
 
 Now both Jack and OSS have to meet each others timing constraints when reading
-/ writing the OSS buffer. The idea of a total buffer size that holds 2*period
+/ writing the OSS buffer. The idea of a total buffer size that holds `2 * period`
 samples is to give some slack and allow Jack to be about one period late. I
 call this the jitter tolerance. But as shown in the example above, the jitter
 tolerance may be much less if there is a slight mismatch between the period
