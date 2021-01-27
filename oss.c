@@ -85,14 +85,7 @@ int main()
   config.channels = tmp;
 
   int minFrag = size2frag(formatSize * config.channels);
-  if (config.frag < minFrag)
-  {
-    config.frag = minFrag;
-    int fsize = formatSize * 8;
-    fprintf(stderr, "Minimal fragmet size for %d channels", config.channels);
-    fprintf(stderr, " and %dbit sample size is %d!\n", fsize, minFrag);
-    exit(1);
-  }
+  if (config.frag < minFrag) { config.frag = minFrag; }
   config.frag = (1 << 16) | config.frag;
   tmp = config.frag;
   error = ioctl(config.fd, SNDCTL_DSP_SETFRAGMENT, &tmp);
