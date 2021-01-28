@@ -99,10 +99,13 @@ int main()
   config.channels = tmp;
 
   /* If desired frag is smaller than minimum, based on number of channels
-   * and format (size in bits: 8, 16, 24, 32), set that as frag
+   * and format (size in bits: 8, 16, 24, 32), set that as frag. Buffer size
+   * is 2^frag, but the real size of the buffer will be read when the
+   * configuration of the device is successfull
    */
   int minFrag = size2frag(formatSize * config.channels);
   if (config.frag < minFrag) { config.frag = minFrag; }
+  /* Allocate N fragments of size config.frag. In this case, N = 1 */
   config.frag = (1 << 16) | config.frag;
   tmp = config.frag;
   error = ioctl(config.fd, SNDCTL_DSP_SETFRAGMENT, &tmp);
