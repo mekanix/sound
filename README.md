@@ -1,7 +1,42 @@
 # FreeBSD OSS
 
-[Official OSS development howto](http://manuals.opensound.com/developer/DSP.html)
+## Introduction
 
+To put it really shortly, general OSS aplication will:
+* open(2)
+* ioctl(2)
+* read(2)
+* write(2)
+* close(2)
+
+In this example, read/write will be called in a loop for a duration of
+record/playback. Usually, `/dev/dsp` is the device you want to open, but it
+can be any OSS compatible device, even user space one created with virtual_oss.
+For configuring sample rate, bit depth and all other configuring of the device
+ioctl is used. As devices can support multiple sample rates and formats, what
+specific application should do in case there's an error issuing ioctl, as not
+all errors are fatal, is upon the developer to decide. As a general guideline
+[Official OSS development howto](http://manuals.opensound.com/developer/DSP.html)
+should be used. FreeBSD OSS and virtual_oss are different to a small degree.
+
+For more advanced OSS and real-time applications, developers need to handle
+buffers more carefully. The size of the buffer in OSS is selected using fragment
+size `size_selector` and the buffer size is 2^size_selector for values between
+4 and 16.
+[The formula on the official site is](http://manuals.opensound.com/developer/SNDCTL_DSP_SETFRAGMENT.html):
+```C
+int frag = (max_fragments << 16) | (size_selector);
+ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &frag);
+```
+The `max_fragments` determines in how many fragments the buffer will be, hence
+if the `size_selector` is 4, the requested size is 2^4 = 16 and for the
+`max_fragments` of 2, the total buffer will be
+`max_fragments * (2 ^ size_selector)` or in this case 32 bytes. Please note
+that size of buffer is in bytes not samples. For example, 24bit sample will be
+represented with 3 bytes. If you're porting audio app from Linux, you should
+be aware that 24 bit samples are represented with 4 bytes (usually `int`).
+
+From kernel perspective, there are few points OSS developers should be aware of:
  * There is a software facing buffer (bs) and a hardware driver buffer (b)
  * The sizes can be seen with `cat /dev/sndstat` as `[b:_/_/_] [bs:_/_/_]` (needed: sysctl hw.snd.verbose=2)
  * OSS ioctl only concern software buffer fragments, not hardware
@@ -12,31 +47,19 @@ Not sure how virtual_oss handles them, but I think it is processed blockwise,
 so try to match its "-s" parameter with Jack period and the block size of your
 hardware - what is it BTW?
 
-For USB the block size is according to `hw.usb.uaudio.buffer_ms` sysctl, meaning 
-2ms at 48kHz gives `0.002 * 48000 = 96` samples per block, all multiples of this 
-work well as Jack period.
+For USB the block size is according to `hw.usb.uaudio.buffer_ms` sysctl, meaning
+2ms at 48kHz gives `0.002 * 48000 = 96` samples per block, all multiples of this
+work well. Block size for virtual_oss, if used, should be set acordingly.
 
+OSS driver insists on reading / writing a certain number of samples at a time,
+one fragment full of samples. It is bound to do so in a fixed time frame, to
+avoid under- and overruns in communication with the hardware.
 
-# Previous mail
-
-Actually it would be 2 fragments in the example that make up a total buffer
-size of `2 * 1024`. Thus my patch would divide it into 8 fragments of size.
-`2 * 1024 / 8 = 256` samples instead.
-
-The problem lies not in the number of bytes written, but in the timing. Jack
-insists on writing / reading a certain number of samples at a time, one period
-per cycle. It is bound to do so in a fixed time frame, because Jack clients
-need input / output at a defined latency. OTOH, OSS driver also insists on
-reading / writing a certain number of samples at a time, one fragment full of
-samples. It is bound to do so in a fixed time frame, to avoid under- and
-overruns in communication with the hardware.
-
-Now both Jack and OSS have to meet each others timing constraints when reading
-/ writing the OSS buffer. The idea of a total buffer size that holds `2 * period`
-samples is to give some slack and allow Jack to be about one period late. I
-call this the jitter tolerance. But as shown in the example above, the jitter
-tolerance may be much less if there is a slight mismatch between the period
-and the samples per fragment.
+The idea of a total buffer size that holds `max_fragments * period` samples is
+to give some slack and allow application to be about `max_fragments - 1`
+periods late. Let's call this the jitter tolerance. The jitter tolerance may be
+much less if there is a slight mismatch between the period and the samples per
+fragment.
 
 Jitter tolerance gets better if we can make either the period or the samples
 per fragment considerably smaller than the other. In our case that means we
@@ -44,8 +67,8 @@ divide the total buffer size into smaller fragments, keeping overall latency
 at the same level.
 
 
-# Compiling
+## Compiling
 
 ```
-cc oss.c -o oss
+cc <example>.c -o <example>
 ```
