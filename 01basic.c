@@ -7,6 +7,25 @@
 #include <unistd.h>
 
 
+#ifndef SAMPLE_SIZE
+#define SAMPLE_SIZE 32
+#endif
+
+#if SAMPLE_SIZE == 32
+typedef int32_t sample_t;
+int format = AFMT_S32_NE; /* Signed 32bit native endian format */
+#elif SAMPLE_SIZE == 24
+typedef int24_t sample_t;
+int format = AFMT_S24_NE; /* Signed 24bit native endian format */
+#elif SAMPLE_SIZE == 16
+typedef int16_t sample_t;
+int format = AFMT_S16_NE; /* Signed 16bit native endian format */
+#elif SAMPLE_SIZE == 8
+typedef int8_t sample_t;
+int format = AFMT_S8_NE; /* Signed 8bit native endian format */
+#endif
+
+
 /* Minimal configuration for OSS
  * For real world applications, this structure will probably contain many
  * more fields
@@ -51,7 +70,7 @@ int main()
   config_t config = {
     .device = "/dev/dsp",
     .channels = 2,
-    .format = AFMT_S32_NE, /* Signed 32bit native endian format */
+    .format = format,
     .frag = 10,
     .samplerate = 48000,
   };
@@ -59,7 +78,7 @@ int main()
   int error;
   int tmp;
   int bufferSize = 1024;
-  int formatSize = sizeof(int32_t);
+  int formatSize = sizeof(sample_t);
   oss_audioinfo ai;
 
   /* Open the device for read and write */
