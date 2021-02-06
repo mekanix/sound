@@ -43,6 +43,7 @@ From kernel perspective, there are few points OSS developers should be aware of:
  * Software buffer fragments don't matter, there is no quantization going on
  * Hardware buffer fragments do matter for timing, but are inaccessible...
 
+### Still a question for virtual_oss -s?
 Not sure how virtual_oss handles them, but I think it is processed blockwise,
 so try to match its "-s" parameter with Jack period and the block size of your
 hardware - what is it BTW?
