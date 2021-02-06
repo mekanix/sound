@@ -39,6 +39,8 @@ typedef struct config
   int frag;
   int fragSize;
   int samplerate;
+  int sampleSize;
+  int nsamples;
 } config_t;
 
 
@@ -73,12 +75,11 @@ int main()
     .format = format,
     .frag = 10,
     .samplerate = 48000,
+    .sampleSize = sizeof(sample_t),
   };
   int devcaps;
   int error;
   int tmp;
-  int bufferSize = 1024;
-  int formatSize = sizeof(sample_t);
   oss_audioinfo ai;
 
   /* Open the device for read and write */
@@ -122,7 +123,7 @@ int main()
    * is 2^frag, but the real size of the buffer will be read when the
    * configuration of the device is successfull
    */
-  int minFrag = size2frag(formatSize * config.channels);
+  int minFrag = size2frag(config.sampleSize * config.channels);
   if (config.frag < minFrag) { config.frag = minFrag; }
   /* Allocate N fragments of size config.frag. In this case, N = 1 */
   config.frag = (1 << 16) | config.frag;
@@ -148,5 +149,9 @@ int main()
   /* When all is set and ready to go, get the size of buffer */
   error = ioctl(config.fd, SNDCTL_DSP_GETBLKSIZE, &config.fragSize);
   checkError(error, "SNDCTL_DSP_GETBLKSIZE");
+  config.nsamples = config.fragSize / config.sampleSize / config.channels;
+
+  sample_t ibuf[config.nsamples];
+  sample_t obuf[config.nsamples];
   return 0;
 }
