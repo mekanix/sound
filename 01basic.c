@@ -67,7 +67,7 @@ static int size2frag(int x)
 }
 
 
-int main()
+int main(int argc, char **argv)
 {
   config_t config = {
     .device = "/dev/dsp",
@@ -126,8 +126,12 @@ int main()
   int minFrag = size2frag(config.sampleSize * config.channels);
   if (config.frag < minFrag) { config.frag = minFrag; }
   /* Allocate N fragments of size config.frag. In this case, N = 1 */
-  config.frag = (1 << 16) | config.frag;
-  tmp = config.frag;
+  int max_fragments;
+  if (argc == 1) { max_fragments = 0; }
+  else { max_fragments = atoi(argv[1]); }
+  printf("max_fragments: %d\n", max_fragments);
+
+  tmp = (max_fragments << 16) | config.frag;
   error = ioctl(config.fd, SNDCTL_DSP_SETFRAGMENT, &tmp);
   checkError(error, "SNDCTL_DSP_SETFRAGMENT");
 
@@ -153,5 +157,7 @@ int main()
 
   sample_t ibuf[config.nsamples];
   sample_t obuf[config.nsamples];
+
+  printf("frag: %d, nsamples: %d, fragSize: %d\n", config.frag, config.nsamples, config.fragSize);
   return 0;
 }
