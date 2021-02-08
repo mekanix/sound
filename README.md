@@ -30,8 +30,8 @@ ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &frag);
 ```
 The `max_fragments` determines in how many fragments the buffer will be, hence
 if the `size_selector` is 4, the requested size is 2^4 = 16 and for the
-`max_fragments` of 2, the total buffer will be
-`max_fragments * (2 ^ size_selector)` or in this case 32 bytes. Please note
+`max_fragments` of 2, the total fragment size will be
+`(2 ^ size_selector) / max_fragments ` or in this case 8 bytes. Please note
 that size of buffer is in bytes not samples. For example, 24bit sample will be
 represented with 3 bytes. If you're porting audio app from Linux, you should
 be aware that 24 bit samples are represented with 4 bytes (usually `int`).
@@ -56,11 +56,11 @@ OSS driver insists on reading / writing a certain number of samples at a time,
 one fragment full of samples. It is bound to do so in a fixed time frame, to
 avoid under- and overruns in communication with the hardware.
 
-The idea of a total buffer size that holds `max_fragments * period` samples is
+The idea of a total buffer size that holds `max_fragments` fragments is
 to give some slack and allow application to be about `max_fragments - 1`
-periods late. Let's call this the jitter tolerance. The jitter tolerance may be
-much less if there is a slight mismatch between the period and the samples per
-fragment.
+fragments late. Let's call this the jitter tolerance. The jitter tolerance may
+be much less if there is a slight mismatch between the period and the samples
+per fragment.
 
 Jitter tolerance gets better if we can make either the period or the samples
 per fragment considerably smaller than the other. In our case that means we
