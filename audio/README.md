@@ -1,8 +1,8 @@
-# FreeBSD OSS
+# FreeBSD OSS Audio
 
 ## Introduction
 
-To put it really shortly, general OSS aplication will:
+To put it really shortly, general audio aplication will:
 * open(2)
 * ioctl(2)
 * read(2)

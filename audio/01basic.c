@@ -42,6 +42,7 @@ typedef struct config
   int samplerate;
   int sampleSize;
   int nsamples;
+  oss_audioinfo ai;
 } config_t;
 
 
@@ -78,31 +79,29 @@ int main(int argc, char **argv)
     .samplerate = 48000,
     .sampleSize = sizeof(sample_t),
   };
-  int devcaps;
   int error;
   int tmp;
-  oss_audioinfo ai;
 
   /* Open the device for read and write */
   config.fd = open(config.device, O_RDWR);
   checkError(config.fd, "open");
 
   /* Get device information */
-  ai.dev = -1;
-  error = ioctl(config.fd, SNDCTL_ENGINEINFO, &ai);
+  config.ai.dev = -1;
+  error = ioctl(config.fd, SNDCTL_ENGINEINFO, &(config.ai));
   checkError(error, "SNDCTL_ENGINEINFO");
-  printf("min_channels: %d\n", ai.min_channels);
-  printf("max_channels: %d\n", ai.max_channels);
-  printf("latency: %d\n", ai.latency);
-  printf("handle: %s\n", ai.handle);
-  if (ai.min_rate > config.samplerate || config.samplerate > ai.max_rate)
+  printf("min_channels: %d\n", config.ai.min_channels);
+  printf("max_channels: %d\n", config.ai.max_channels);
+  printf("latency: %d\n", config.ai.latency);
+  printf("handle: %s\n", config.ai.handle);
+  if (config.ai.min_rate > config.samplerate || config.samplerate > config.ai.max_rate)
   {
     fprintf(stderr, "%s doesn't support chosen ", config.device);
     fprintf(stderr, "samplerate of %dHz!\n", config.samplerate);
     exit(1);
   }
 
-  error = ioctl(config.fd, SNDCTL_DSP_GETCAPS, &devcaps);
+  error = ioctl(config.fd, SNDCTL_DSP_GETCAPS, &(config.ai.caps));
   checkError(error, "SNDCTL_DSP_GETCAPS");
 
   /* Set number of channels. If number of channels is chosen to the value
