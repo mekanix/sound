@@ -124,6 +124,21 @@ int main(int argc, char **argv)
   }
   config.channels = tmp;
 
+  /* Set format, or bit size: 8, 16, 24 or 32 bit sample */
+  tmp = config.format;
+  error = ioctl(config.fd, SNDCTL_DSP_SETFMT, &tmp);
+  checkError(error, "SNDCTL_DSP_SETFMT");
+  if (tmp != config.format)
+  {
+    fprintf(stderr, "%s doesn't support chosen sample format!\n", config.device);
+    exit(1);
+  }
+
+  /* Most common values for samplerate (in kHz): 44.1, 48, 88.2, 96 */
+  tmp = config.samplerate;
+  error = ioctl(config.fd, SNDCTL_DSP_SPEED, &tmp);
+  checkError(error, "SNDCTL_DSP_SPEED");
+
   /* If desired frag is smaller than minimum, based on number of channels
    * and format (size in bits: 8, 16, 24, 32), set that as frag. Buffer size
    * is 2^frag, but the real size of the buffer will be read when the
@@ -142,21 +157,6 @@ int main(int argc, char **argv)
   tmp = (max_fragments << 16) | config.frag;
   error = ioctl(config.fd, SNDCTL_DSP_SETFRAGMENT, &tmp);
   checkError(error, "SNDCTL_DSP_SETFRAGMENT");
-
-  /* Set format, or bit size: 8, 16, 24 or 32 bit sample */
-  tmp = config.format;
-  error = ioctl(config.fd, SNDCTL_DSP_SETFMT, &tmp);
-  checkError(error, "SNDCTL_DSP_SETFMT");
-  if (tmp != config.format)
-  {
-    fprintf(stderr, "%s doesn't support chosen sample format!\n", config.device);
-    exit(1);
-  }
-
-  /* Most common values for samplerate (in kHz): 44.1, 48, 88.2, 96 */
-  tmp = config.samplerate;
-  error = ioctl(config.fd, SNDCTL_DSP_SPEED, &tmp);
-  checkError(error, "SNDCTL_DSP_SPEED");
 
   /* When all is set and ready to go, get the size of buffer */
   error = ioctl(config.fd, SNDCTL_DSP_GETBLKSIZE, &config.fragSize);
