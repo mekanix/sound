@@ -63,6 +63,15 @@ divide the total buffer size into smaller fragments, keeping overall latency
 at the same level.
 
 
+## What is interleaved?
+Audio data in FreeBSD OSS will be in interleaved format, which means for 2
+channels, samples will be in this order: L,R,L,R,... Non-interleaved format
+is L,L,R,R,... (in the buffer size of 4 samples). Interleaved format must be
+converted to non-interleaved one per channel, so each channel buffer will
+contain either L,L or R,R. When channel processing is done, channel buffers
+have to be converted to interleaved format to be written to the device.
+
+
 ## Compiling
 
 ```
