@@ -156,18 +156,46 @@ int main(int argc, char **argv)
   /* When all is set and ready to go, get the size of buffer */
   error = ioctl(config.fd, SNDCTL_DSP_GETBLKSIZE, &config.fragSize);
   checkError(error, "SNDCTL_DSP_GETBLKSIZE");
-  config.nsamples = config.fragSize / config.sampleSize / config.channels;
+  int totalSamples = config.fragSize / config.sampleSize;
+  config.nsamples =  totalSamples / config.channels;
 
   /* Allocate input and output buffers so that their size match fragSize */
-  sample_t ibuf[config.nsamples * config.channels];
-  sample_t obuf[config.nsamples * config.channels];
+  sample_t ibuf[totalSamples];
+  sample_t obuf[totalSamples];
   printf("frag: %d, nsamples: %d, fragSize: %d\n", config.frag, config.nsamples, config.fragSize);
 
+  /* Allocate buffer per channel */
+  sample_t channels[config.channels][config.nsamples];
+
   /* Minimal engine: read input and copy it to the output */
+  int i;
+  int channel;
+  int index;
   while(1)
   {
     read(config.fd, ibuf, config.fragSize);
-    memcpy(obuf, ibuf, config.fragSize);
+    /* Split input buffer into channels. Input buffer is in interleaved format
+     * which means if we have 2 channels (L and R), this is what the buffer of
+     * 8 samples would contain: L,R,L,R,L,R,L,R. The result are two channels
+     * containing: L,L,L,L and R,R,R,R.
+     */
+    for (i = 0; i < totalSamples; ++i)
+    {
+      channel = i % config.channels;
+      index = i / config.channels;
+      channels[channel][index] = ibuf[i];
+    }
+
+    /* Convert channels into interleaved format and place it in output
+     * buffer
+     */
+    for (channel = 0; channel < config.channels; ++channel)
+    {
+      for (index = 0; index < config.nsamples ; ++index)
+      {
+        obuf[index * config.channels + channel] = channels[channel][index];
+      }
+    }
     write(config.fd, obuf, config.fragSize);
   }
   return 0;
