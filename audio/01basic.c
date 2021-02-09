@@ -101,8 +101,14 @@ int main(int argc, char **argv)
     exit(1);
   }
 
+  /* Get and check device capabilities */
   error = ioctl(config.fd, SNDCTL_DSP_GETCAPS, &(config.ai.caps));
   checkError(error, "SNDCTL_DSP_GETCAPS");
+  if (!(config.ai.caps & PCM_CAP_DUPLEX))
+  {
+    fprintf(stderr, "Device doesn't support full duplex!\n");
+    exit(1);
+  }
 
   /* Set number of channels. If number of channels is chosen to the value
    * near the one wanted, save it in config
