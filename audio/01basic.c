@@ -11,6 +11,7 @@
 #define SAMPLE_SIZE 32
 #endif
 
+/* Format can be unsigned, in which case replace S with U */
 #if SAMPLE_SIZE == 32
 typedef int32_t sample_t;
 int format = AFMT_S32_NE; /* Signed 32bit native endian format */
@@ -110,7 +111,7 @@ int main(int argc, char **argv)
   tmp = config.channels;
   error = ioctl(config.fd, SNDCTL_DSP_CHANNELS, &tmp);
   checkError(error, "SNDCTL_DSP_CHANNELS");
-  if (tmp != config.channels)
+  if (tmp != config.channels) /* or check if tmp is close enough? */
   {
     fprintf(stderr, "%s doesn't support chosen ", config.device);
     fprintf(stderr, "channel count of %d", config.channels);
@@ -125,12 +126,14 @@ int main(int argc, char **argv)
    */
   int minFrag = size2frag(config.sampleSize * config.channels);
   if (config.frag < minFrag) { config.frag = minFrag; }
-  /* Allocate N fragments of size config.frag. In this case, N = 1 */
+
+  /* Allocate buffer in fragments. Total buffer will be split in number
+   * of fragments (2 by default)
+   */
   int max_fragments;
-  if (argc == 1) { max_fragments = 0; }
+  if (argc == 1) { max_fragments = 2; }
   else { max_fragments = atoi(argv[1]); }
   printf("max_fragments: %d\n", max_fragments);
-
   tmp = (max_fragments << 16) | config.frag;
   error = ioctl(config.fd, SNDCTL_DSP_SETFRAGMENT, &tmp);
   checkError(error, "SNDCTL_DSP_SETFRAGMENT");
@@ -155,9 +158,17 @@ int main(int argc, char **argv)
   checkError(error, "SNDCTL_DSP_GETBLKSIZE");
   config.nsamples = config.fragSize / config.sampleSize / config.channels;
 
-  sample_t ibuf[config.nsamples];
-  sample_t obuf[config.nsamples];
-
+  /* Allocate input and output buffers so that their size match fragSize */
+  sample_t ibuf[config.nsamples * config.channels];
+  sample_t obuf[config.nsamples * config.channels];
   printf("frag: %d, nsamples: %d, fragSize: %d\n", config.frag, config.nsamples, config.fragSize);
+
+  /* Minimal engine: read input and copy it to the output */
+  while(1)
+  {
+    read(config.fd, ibuf, config.fragSize);
+    memcpy(obuf, ibuf, config.fragSize);
+    write(config.fd, obuf, config.fragSize);
+  }
   return 0;
 }
