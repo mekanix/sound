@@ -42,7 +42,8 @@ typedef struct config
   int samplerate;
   int sampleSize;
   int nsamples;
-  oss_audioinfo ai;
+  oss_audioinfo audioInfo;
+  audio_buf_info bufferInfo;
 } config_t;
 
 
@@ -87,14 +88,14 @@ int main(int argc, char **argv)
   checkError(config.fd, "open");
 
   /* Get device information */
-  config.ai.dev = -1;
-  error = ioctl(config.fd, SNDCTL_ENGINEINFO, &(config.ai));
+  config.audioInfo.dev = -1;
+  error = ioctl(config.fd, SNDCTL_ENGINEINFO, &(config.audioInfo));
   checkError(error, "SNDCTL_ENGINEINFO");
-  printf("min_channels: %d\n", config.ai.min_channels);
-  printf("max_channels: %d\n", config.ai.max_channels);
-  printf("latency: %d\n", config.ai.latency);
-  printf("handle: %s\n", config.ai.handle);
-  if (config.ai.min_rate > config.samplerate || config.samplerate > config.ai.max_rate)
+  printf("min_channels: %d\n", config.audioInfo.min_channels);
+  printf("max_channels: %d\n", config.audioInfo.max_channels);
+  printf("latency: %d\n", config.audioInfo.latency);
+  printf("handle: %s\n", config.audioInfo.handle);
+  if (config.audioInfo.min_rate > config.samplerate || config.samplerate > config.audioInfo.max_rate)
   {
     fprintf(stderr, "%s doesn't support chosen ", config.device);
     fprintf(stderr, "samplerate of %dHz!\n", config.samplerate);
@@ -102,9 +103,9 @@ int main(int argc, char **argv)
   }
 
   /* Get and check device capabilities */
-  error = ioctl(config.fd, SNDCTL_DSP_GETCAPS, &(config.ai.caps));
+  error = ioctl(config.fd, SNDCTL_DSP_GETCAPS, &(config.audioInfo.caps));
   checkError(error, "SNDCTL_DSP_GETCAPS");
-  if (!(config.ai.caps & PCM_CAP_DUPLEX))
+  if (!(config.audioInfo.caps & PCM_CAP_DUPLEX))
   {
     fprintf(stderr, "Device doesn't support full duplex!\n");
     exit(1);
@@ -153,21 +154,27 @@ int main(int argc, char **argv)
   int max_fragments;
   if (argc == 1) { max_fragments = 2; }
   else { max_fragments = atoi(argv[1]); }
-  printf("max_fragments: %d\n", max_fragments);
   tmp = (max_fragments << 16) | config.frag;
   error = ioctl(config.fd, SNDCTL_DSP_SETFRAGMENT, &tmp);
   checkError(error, "SNDCTL_DSP_SETFRAGMENT");
 
   /* When all is set and ready to go, get the size of buffer */
-  error = ioctl(config.fd, SNDCTL_DSP_GETBLKSIZE, &config.fragSize);
-  checkError(error, "SNDCTL_DSP_GETBLKSIZE");
-  int totalSamples = config.fragSize / config.sampleSize;
+  error = ioctl(config.fd, SNDCTL_DSP_GETOSPACE, &(config.bufferInfo));
+  checkError(error, "SNDCTL_DSP_GETOSPACE");
+  int totalSamples = config.bufferInfo.bytes / config.sampleSize;
   config.nsamples =  totalSamples / config.channels;
 
   /* Allocate input and output buffers so that their size match fragSize */
   sample_t ibuf[totalSamples];
   sample_t obuf[totalSamples];
-  printf("frag: %d, nsamples: %d, fragSize: %d\n", config.frag, config.nsamples, config.fragSize);
+  printf(
+    "bytes: %d, fragments: %d, fragsize: %d, fragstotal: %d, samples: %d\n",
+    config.bufferInfo.bytes,
+    config.bufferInfo.fragments,
+    config.bufferInfo.fragsize,
+    config.bufferInfo.fragstotal,
+    totalSamples
+  );
 
   /* Allocate buffer per channel */
   sample_t channels[config.channels][config.nsamples];
@@ -178,7 +185,7 @@ int main(int argc, char **argv)
   int index;
   while(1)
   {
-    read(config.fd, ibuf, config.fragSize);
+    read(config.fd, ibuf, config.bufferInfo.bytes);
     /* Split input buffer into channels. Input buffer is in interleaved format
      * which means if we have 2 channels (L and R), this is what the buffer of
      * 8 samples would contain: L,R,L,R,L,R,L,R. The result are two channels
@@ -201,7 +208,7 @@ int main(int argc, char **argv)
         obuf[index * config.channels + channel] = channels[channel][index];
       }
     }
-    write(config.fd, obuf, config.fragSize);
+    write(config.fd, obuf, config.bufferInfo.bytes);
   }
   return 0;
 }
