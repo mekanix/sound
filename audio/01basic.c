@@ -209,5 +209,6 @@ int main(int argc, char **argv)
     }
     write(config.fd, obuf, config.bufferInfo.bytes);
   }
+  close(config.fd);
   return 0;
 }
