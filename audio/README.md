@@ -36,6 +36,11 @@ that size of buffer is in bytes not samples. For example, 24bit sample will be
 represented with 3 bytes. If you're porting audio app from Linux, you should
 be aware that 24 bit samples are represented with 4 bytes (usually `int`).
 
+FreeBSD kernel will round up `max_fragments` and size of fragment/buffer, so
+the last thing any OSS code should do is get info about buffer with
+`audio_buf_info` and `SNDCTL_DSP_GETOSPACE`. That also means that not all
+values of `max_fragments` are permitted.
+
 From kernel perspective, there are few points OSS developers should be aware of:
  * There is a software facing buffer (bs) and a hardware driver buffer (b)
  * The sizes can be seen with `cat /dev/sndstat` as `[b:_/_/_] [bs:_/_/_]` (needed: sysctl hw.snd.verbose=2)
@@ -56,11 +61,6 @@ to give some slack and allow application to be about `max_fragments - 1`
 fragments late. Let's call this the jitter tolerance. The jitter tolerance may
 be much less if there is a slight mismatch between the period and the samples
 per fragment.
-
-FreeBSD kernel will round up `max_fragments` and size of fragment/buffer, so
-the last thing any OSS code should do is get info about buffer with
-`audio_buf_info` and `SNDCTL_DSP_GETOSPACE`. That also means that not all
-values of `max_fragments` are permitted.
 
 Jitter tolerance gets better if we can make either the period or the samples
 per fragment considerably smaller than the other. In our case that means we
