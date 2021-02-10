@@ -38,7 +38,6 @@ typedef struct config
   int fd;
   int format;
   int frag;
-  int fragSize;
   int samplerate;
   int sampleSize;
   int nsamples;

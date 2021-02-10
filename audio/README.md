@@ -30,8 +30,8 @@ ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &frag);
 ```
 The `max_fragments` determines in how many fragments the buffer will be, hence
 if the `size_selector` is 4, the requested size is 2^4 = 16 and for the
-`max_fragments` of 2, the total fragment size will be
-`(2 ^ size_selector) / max_fragments ` or in this case 8 bytes. Please note
+`max_fragments` of 2, the total buffer size will be
+`(2 ^ size_selector) * max_fragments` or in this case 32 bytes. Please note
 that size of buffer is in bytes not samples. For example, 24bit sample will be
 represented with 3 bytes. If you're porting audio app from Linux, you should
 be aware that 24 bit samples are represented with 4 bytes (usually `int`).
@@ -56,6 +56,11 @@ to give some slack and allow application to be about `max_fragments - 1`
 fragments late. Let's call this the jitter tolerance. The jitter tolerance may
 be much less if there is a slight mismatch between the period and the samples
 per fragment.
+
+FreeBSD kernel will round up `max_fragments` and size of fragment/buffer, so
+the last thing any OSS code should do is get info about buffer with
+`audio_buf_info` and `SNDCTL_DSP_GETOSPACE`. That also means that not all
+values of `max_fragments` are permitted.
 
 Jitter tolerance gets better if we can make either the period or the samples
 per fragment considerably smaller than the other. In our case that means we
