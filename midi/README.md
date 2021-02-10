@@ -11,6 +11,13 @@ note event, second byte is not pitch and third byte is velocity. All values
 are unsigned. For controller type, second byte is controller number and third
 byte is controller value.
 
+## MIDI Files
+
+Although file parsing/writing is not part of this documentation, there are few
+points that you need to keep in mind while developing MIDI application. All
+MIDI files are big endian so you need to convert them to your native 
+endines. For x86 that means little endian. For more information look at
+[Standard MIDI File Structure](http://www.ccarh.org/courses/253/handout/smf/)
 
 ## Compiling
 
