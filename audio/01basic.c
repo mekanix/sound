@@ -12,26 +12,19 @@
 #endif
 
 /* Format can be unsigned, in which case replace S with U */
-#if SAMPLE_SIZE == 24
-  typedef int32_t sample_t;
-  int format = AFMT_S24_NE; /* Signed 32bit native endian format */
-  int sampleSize = 3;
+#if SAMPLE_SIZE == 32
+typedef int32_t sample_t;
+int format = AFMT_S32_NE; /* Signed 32bit native endian format */
+#elif SAMPLE_SIZE == 16
+typedef int16_t sample_t;
+int format = AFMT_S16_NE; /* Signed 16bit native endian format */
+#elif SAMPLE_SIZE == 8
+typedef int8_t sample_t;
+int format = AFMT_S8_NE; /* Signed 8bit native endian format */
 #else
-  #if SAMPLE_SIZE == 32
-    typedef int32_t sample_t;
-    int format = AFMT_S32_NE; /* Signed 32bit native endian format */
-  #elif SAMPLE_SIZE == 16
-    typedef int16_t sample_t;
-    int format = AFMT_S16_NE; /* Signed 16bit native endian format */
-  #elif SAMPLE_SIZE == 8
-    typedef int8_t sample_t;
-    int format = AFMT_S8_NE; /* Signed 8bit native endian format */
-  #else
-    #error Unsupported sample format!
-    typedef int32_t sample_t;
-    int format = AFMT_S32_NE; /* Signed 32bit native endian format */
-  #endif
-  int sampleSize = sizeof(sample_t);
+#error Unsupported sample format!
+typedef int32_t sample_t;
+int format = AFMT_S32_NE; /* Signed 32bit native endian format */
 #endif
 
 
@@ -86,7 +79,7 @@ int main(int argc, char **argv)
     .format = format,
     .frag = 10,
     .samplerate = 48000,
-    .sampleSize = sampleSize,
+    .sampleSize = sizeof(sample_t),
   };
   int error;
   int tmp;
@@ -191,18 +184,8 @@ int main(int argc, char **argv)
   int i;
   int channel;
   int index;
-#if SAMPLE_SIZE == 24
-  int8_t *input = ibuf;
-  int8_t *output = obuf;
-  int bo; /* Offset in bytes */
-  int8_t *b;
-  int8_t val;
-  sample_t s;
-  int negative;
-#else
   sample_t *input = (sample_t *)ibuf;
   sample_t *output = (sample_t *)obuf;
-#endif
   while(1)
   {
     read(config.fd, ibuf, config.bufferInfo.bytes);
@@ -215,23 +198,7 @@ int main(int argc, char **argv)
     {
       channel = i % config.channels;
       index = i / config.channels;
-#if SAMPLE_SIZE == 24
-      bo = i * config.sampleSize;
-      val = input[bo];
-      negative = val < 0;
-      if (negative) { val = -val; }
-      s = val;
-      s <<= 8;
-      ++bo;
-      s += input[bo];
-      s <<= 8;
-      ++bo;
-      s += input[bo];
-      if (negative) { s = -s; }
-      channels[channel][index] = s;
-#else
       channels[channel][index] = input[i];
-#endif
     }
 
     /* Convert channels into interleaved format and place it in output
@@ -241,18 +208,7 @@ int main(int argc, char **argv)
     {
       for (index = 0; index < config.nsamples ; ++index)
       {
-#if SAMPLE_SIZE == 24
-        s = channels[channel][index];
-        b = (int8_t *)&s;
-        i = (index * config.channels + channel) * config.sampleSize;
-        negative = s < 0;
-        if (negative) { output[i] = -(*(b+1)); }
-        else { output[i] = *(b+1); }
-        output[i+1] = *(b+2);
-        output[i+2] = *(b+3);
-#else
         output[index * config.channels + channel] = channels[channel][index];
-#endif
       }
     }
     write(config.fd, obuf, config.bufferInfo.bytes);
