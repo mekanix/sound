@@ -15,11 +15,11 @@ byte is controller value.
 
 Although file parsing/writing is not part of this documentation, there are few
 points that you need to keep in mind while developing MIDI application. All
-MIDI files in SMF format (most common) are big endian so you need to convert 
-them to your native endines. For x86 that means little endian. For more 
+MIDI files in SMF format (most common) are big endian so you need to convert
+them to your native endines. For x86 that means little endian. For more
 information take a look at
 [Standard MIDI File Structure](http://www.ccarh.org/courses/253/handout/smf/).
-In any case, it's recommended to use MIDI file parsing library instead of 
+In any case, it's recommended to use MIDI file parsing library instead of
 writing your own code.
 
 ## Compiling

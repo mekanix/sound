@@ -196,6 +196,9 @@ int main(int argc, char **argv)
   int8_t *output = obuf;
   int bo; /* Offset in bytes */
   int8_t *b;
+  int8_t val;
+  sample_t s;
+  int negative;
 #else
   sample_t *input = (sample_t *)ibuf;
   sample_t *output = (sample_t *)obuf;
@@ -214,11 +217,17 @@ int main(int argc, char **argv)
       index = i / config.channels;
 #if SAMPLE_SIZE == 24
       bo = i * config.sampleSize;
-      sample_t s = input[bo];
+      val = input[bo];
+      negative = val < 0;
+      if (negative) { val = -val; }
+      s = val;
       s <<= 8;
-      s += input[bo+1];
+      ++bo;
+      s += input[bo];
       s <<= 8;
-      s += input[bo+2];
+      ++bo;
+      s += input[bo];
+      if (negative) { s = -s; }
       channels[channel][index] = s;
 #else
       channels[channel][index] = input[i];
@@ -233,11 +242,14 @@ int main(int argc, char **argv)
       for (index = 0; index < config.nsamples ; ++index)
       {
 #if SAMPLE_SIZE == 24
-        b = (int8_t *)&(channels[channel][index]);
+        s = channels[channel][index];
+        b = (int8_t *)&s;
         i = (index * config.channels + channel) * config.sampleSize;
-        output[i] = *b;
-        output[i+1] = *(b+1);
-        output[i+2] = *(b+2);
+        negative = s < 0;
+        if (negative) { output[i] = -(*(b+1)); }
+        else { output[i] = *(b+1); }
+        output[i+1] = *(b+2);
+        output[i+2] = *(b+3);
 #else
         output[index * config.channels + channel] = channels[channel][index];
 #endif
