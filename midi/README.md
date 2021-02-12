@@ -22,6 +22,19 @@ information take a look at
 In any case, it's recommended to use MIDI file parsing library instead of
 writing your own code.
 
+## DevFS Rules
+
+Note that by default, users do not have write permission on MIDI devices.
+To change that, add the following to `/etc/devfs.rules`:
+
+```
+[midi=5]
+add path 'midi*' mode 0666
+add path 'umidi*' mode 0666
+```
+
+You can change the `midi=5` to any name and number that is free on your system.
+
 ## Compiling
 
 ```
