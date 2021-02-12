@@ -11,6 +11,7 @@ int main()
     .samplerate = 48000,
     .sampleSize = sizeof(sample_t),
     .bufferInfo.fragments = -1,
+    .mmap = 0,
   };
   int error;
 

@@ -43,6 +43,7 @@ typedef struct config
   int samplerate;
   int sampleSize;
   int nsamples;
+  int mmap;
   oss_audioinfo audioInfo;
   audio_buf_info bufferInfo;
 } config_t;
@@ -94,13 +95,14 @@ void ossInit(config_t *config)
     exit(1);
   }
 
-  /* Get and check device capabilities */
-  error = ioctl(config->fd, SNDCTL_DSP_GETCAPS, &(config->audioInfo.caps));
-  checkError(error, "SNDCTL_DSP_GETCAPS");
-  if (!(config->audioInfo.caps & PCM_CAP_DUPLEX))
+  /* If device is going to be used in mmap mode, disable all format
+   * conversions. Official OSS documentation states error code should not be
+   * checked. http://manuals.opensound.com/developer/mmap_test.c.html#LOC10
+   */
+  if (config->mmap)
   {
-    fprintf(stderr, "Device doesn't support full duplex!\n");
-    exit(1);
+    tmp = 0;
+    ioctl (config->fd, SNDCTL_DSP_COOKEDMODE, &tmp);
   }
 
   /* Set number of channels. If number of channels is chosen to the value
@@ -132,6 +134,28 @@ void ossInit(config_t *config)
   error = ioctl(config->fd, SNDCTL_DSP_SPEED, &tmp);
   checkError(error, "SNDCTL_DSP_SPEED");
 
+  /* Get and check device capabilities */
+  error = ioctl(config->fd, SNDCTL_DSP_GETCAPS, &(config->audioInfo.caps));
+  checkError(error, "SNDCTL_DSP_GETCAPS");
+  if (!(config->audioInfo.caps & PCM_CAP_DUPLEX))
+  {
+    fprintf(stderr, "Device doesn't support full duplex!\n");
+    exit(1);
+  }
+  if (config->mmap)
+  {
+    if (!(config->audioInfo.caps & PCM_CAP_TRIGGER))
+    {
+      fprintf(stderr, "Device doesn't support triggering!\n");
+      exit(1);
+    }
+    if (!(config->audioInfo.caps & PCM_CAP_MMAP))
+    {
+      fprintf(stderr, "Device doesn't support mmap mode!\n");
+      exit(1);
+    }
+  }
+
   /* If desired frag is smaller than minimum, based on number of channels
    * and format (size in bits: 8, 16, 24, 32), set that as frag. Buffer size
    * is 2^frag, but the real size of the buffer will be read when the
@@ -143,7 +167,7 @@ void ossInit(config_t *config)
   /* Allocate buffer in fragments. Total buffer will be split in number
    * of fragments (2 by default)
    */
-  if (config->bufferInfo.fragments == -1) { config->bufferInfo.fragments = 2; }
+  if (config->bufferInfo.fragments < -1) { config->bufferInfo.fragments = 2; }
   tmp = ((config->bufferInfo.fragments) << 16) | config->frag;
   error = ioctl(config->fd, SNDCTL_DSP_SETFRAGMENT, &tmp);
   checkError(error, "SNDCTL_DSP_SETFRAGMENT");
