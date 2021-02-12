@@ -8,21 +8,14 @@ int main()
     .channels = 2,
     .format = format,
     .frag = 10,
-    .samplerate = 48000,
+    .sampleRate = 48000,
     .sampleSize = sizeof(sample_t),
     .bufferInfo.fragments = -1,
     .mmap = 0,
   };
-  int error;
 
   /* Initialize device */
   ossInit(&config);
-
-  /* When all is set and ready to go, get the size of buffer */
-  error = ioctl(config.fd, SNDCTL_DSP_GETOSPACE, &(config.bufferInfo));
-  checkError(error, "SNDCTL_DSP_GETOSPACE");
-  int totalSamples = config.bufferInfo.bytes / config.sampleSize;
-  config.nsamples =  totalSamples / config.channels;
 
   /* Allocate input and output buffers so that their size match fragSize */
   int8_t ibuf[config.bufferInfo.bytes];
@@ -33,7 +26,7 @@ int main()
     config.bufferInfo.fragments,
     config.bufferInfo.fragsize,
     config.bufferInfo.fragstotal,
-    totalSamples
+    config.sampleCount
   );
 
   /* Allocate buffer per channel */
@@ -53,7 +46,7 @@ int main()
      * 8 samples would contain: L,R,L,R,L,R,L,R. The result are two channels
      * containing: L,L,L,L and R,R,R,R.
      */
-    for (i = 0; i < totalSamples; ++i)
+    for (i = 0; i < config.sampleCount; ++i)
     {
       channel = i % config.channels;
       index = i / config.channels;

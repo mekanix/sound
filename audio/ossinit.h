@@ -40,7 +40,8 @@ typedef struct config
   int fd;
   int format;
   int frag;
-  int samplerate;
+  int sampleCount;
+  int sampleRate;
   int sampleSize;
   int nsamples;
   int mmap;
@@ -88,10 +89,10 @@ void ossInit(config_t *config)
   printf("max_channels: %d\n", config->audioInfo.max_channels);
   printf("latency: %d\n", config->audioInfo.latency);
   printf("handle: %s\n", config->audioInfo.handle);
-  if (config->audioInfo.min_rate > config->samplerate || config->samplerate > config->audioInfo.max_rate)
+  if (config->audioInfo.min_rate > config->sampleRate || config->sampleRate > config->audioInfo.max_rate)
   {
     fprintf(stderr, "%s doesn't support chosen ", config->device);
-    fprintf(stderr, "samplerate of %dHz!\n", config->samplerate);
+    fprintf(stderr, "samplerate of %dHz!\n", config->sampleRate);
     exit(1);
   }
 
@@ -130,7 +131,7 @@ void ossInit(config_t *config)
   }
 
   /* Most common values for samplerate (in kHz): 44.1, 48, 88.2, 96 */
-  tmp = config->samplerate;
+  tmp = config->sampleRate;
   error = ioctl(config->fd, SNDCTL_DSP_SPEED, &tmp);
   checkError(error, "SNDCTL_DSP_SPEED");
 
@@ -167,8 +168,14 @@ void ossInit(config_t *config)
   /* Allocate buffer in fragments. Total buffer will be split in number
    * of fragments (2 by default)
    */
-  if (config->bufferInfo.fragments < -1) { config->bufferInfo.fragments = 2; }
+  if (config->bufferInfo.fragments < 0) { config->bufferInfo.fragments = 2; }
   tmp = ((config->bufferInfo.fragments) << 16) | config->frag;
   error = ioctl(config->fd, SNDCTL_DSP_SETFRAGMENT, &tmp);
   checkError(error, "SNDCTL_DSP_SETFRAGMENT");
+
+  /* When all is set and ready to go, get the size of buffer */
+  error = ioctl(config->fd, SNDCTL_DSP_GETOSPACE, &(config->bufferInfo));
+  checkError(error, "SNDCTL_DSP_GETOSPACE");
+  config->sampleCount = config->bufferInfo.bytes / config->sampleSize;
+  config->nsamples =  config->sampleCount / config->channels;
 }
