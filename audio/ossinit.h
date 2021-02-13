@@ -8,7 +8,7 @@
 
 
 #ifndef SAMPLE_SIZE
-#define SAMPLE_SIZE 32
+#define SAMPLE_SIZE 16
 #endif
 
 /* Format can be unsigned, in which case replace S with U */
@@ -126,6 +126,10 @@ void ossInit(config_t *config)
     fprintf(stderr, "%s doesn't support chosen ", config->device);
     fprintf(stderr, "samplerate of %dHz!\n", config->sampleRate);
     exit(1);
+  }
+  if (config->channels < 1)
+  {
+    config->channels = config->audioInfo.max_channels;
   }
 
   /* If device is going to be used in mmap mode, disable all format

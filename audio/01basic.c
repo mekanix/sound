@@ -5,7 +5,7 @@ int main()
 {
   config_t config = {
     .device = "/dev/dsp",
-    .channels = 2,
+    .channels = -1,
     .format = format,
     .frag = 10,
     .sampleRate = 48000,
