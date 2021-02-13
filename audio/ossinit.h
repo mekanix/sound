@@ -73,6 +73,38 @@ int size2frag(int x)
 }
 
 
+/* Split input buffer into channels. Input buffer is in interleaved format
+ * which means if we have 2 channels (L and R), this is what the buffer of
+ * 8 samples would contain: L,R,L,R,L,R,L,R. The result are two channels
+ * containing: L,L,L,L and R,R,R,R.
+ */
+void ossSplit(config_t *config, sample_t *input, sample_t *output)
+{
+  int channel;
+  int index;
+  for (int i = 0; i < config->sampleCount; ++i)
+  {
+    channel = i % config->channels;
+    index = i / config->channels;
+    output[channel * index] = input[i];
+  }
+}
+
+
+/* Convert channels into interleaved format and place it in output
+ * buffer
+ */
+void ossMerge(config_t *config, sample_t *input, sample_t *output)
+{
+  for (int channel = 0; channel < config->channels; ++channel)
+  {
+    for (int index = 0; index < config->nsamples ; ++index)
+    {
+      output[index * config->channels + channel] = input[channel * index];
+    }
+  }
+}
+
 void ossInit(config_t *config)
 {
   int error;

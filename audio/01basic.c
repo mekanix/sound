@@ -20,6 +20,7 @@ int main()
   /* Allocate input and output buffers so that their size match fragSize */
   int8_t ibuf[config.bufferInfo.bytes];
   int8_t obuf[config.bufferInfo.bytes];
+  sample_t *channels = (sample_t *)malloc(config.bufferInfo.bytes);
   printf(
     "bytes: %d, fragments: %d, fragsize: %d, fragstotal: %d, samples: %d\n",
     config.bufferInfo.bytes,
@@ -29,42 +30,17 @@ int main()
     config.sampleCount
   );
 
-  /* Allocate buffer per channel */
-  sample_t channels[config.channels][config.nsamples];
-
   /* Minimal engine: read input and copy it to the output */
-  int i;
-  int channel;
-  int index;
-  sample_t *input = (sample_t *)ibuf;
-  sample_t *output = (sample_t *)obuf;
   while(1)
   {
     read(config.fd, ibuf, config.bufferInfo.bytes);
-    /* Split input buffer into channels. Input buffer is in interleaved format
-     * which means if we have 2 channels (L and R), this is what the buffer of
-     * 8 samples would contain: L,R,L,R,L,R,L,R. The result are two channels
-     * containing: L,L,L,L and R,R,R,R.
-     */
-    for (i = 0; i < config.sampleCount; ++i)
-    {
-      channel = i % config.channels;
-      index = i / config.channels;
-      channels[channel][index] = input[i];
-    }
-
-    /* Convert channels into interleaved format and place it in output
-     * buffer
-     */
-    for (channel = 0; channel < config.channels; ++channel)
-    {
-      for (index = 0; index < config.nsamples ; ++index)
-      {
-        output[index * config.channels + channel] = channels[channel][index];
-      }
-    }
+    ossSplit(&config, (sample_t *)ibuf, channels);
+    ossMerge(&config, channels, (sample_t *)obuf);
     write(config.fd, obuf, config.bufferInfo.bytes);
   }
+
+  /* Cleanup */
+  free(channels);
   close(config.fd);
   return 0;
 }
