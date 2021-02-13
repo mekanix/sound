@@ -24,7 +24,7 @@ int format = AFMT_S8_NE; /* Signed 8bit native endian format */
 #else
 #error Unsupported sample format!
 typedef int32_t sample_t;
-int format = AFMT_S32_NE; /* Signed 32bit native endian format */
+int format = AFMT_S16_NE; /* Not a real value, just silencing compiler errors */
 #endif
 
 

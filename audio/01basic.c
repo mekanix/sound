@@ -18,12 +18,13 @@ int main()
   ossInit(&config);
 
   /* Allocate input and output buffers so that their size match fragSize */
-  int8_t ibuf[config.bufferInfo.bytes];
-  int8_t obuf[config.bufferInfo.bytes];
-  sample_t *channels = (sample_t *)malloc(config.bufferInfo.bytes);
+  int bytes = config.bufferInfo.bytes;
+  int8_t ibuf[bytes];
+  int8_t obuf[bytes];
+  sample_t *channels = (sample_t *)malloc(bytes);
   printf(
     "bytes: %d, fragments: %d, fragsize: %d, fragstotal: %d, samples: %d\n",
-    config.bufferInfo.bytes,
+    bytes,
     config.bufferInfo.fragments,
     config.bufferInfo.fragsize,
     config.bufferInfo.fragstotal,
@@ -33,10 +34,10 @@ int main()
   /* Minimal engine: read input and copy it to the output */
   while(1)
   {
-    read(config.fd, ibuf, config.bufferInfo.bytes);
+    read(config.fd, ibuf, bytes);
     ossSplit(&config, (sample_t *)ibuf, channels);
     ossMerge(&config, channels, (sample_t *)obuf);
-    write(config.fd, obuf, config.bufferInfo.bytes);
+    write(config.fd, obuf, bytes);
   }
 
   /* Cleanup */
